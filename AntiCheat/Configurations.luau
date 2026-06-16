@@ -5,7 +5,7 @@ Configurations.USE_IMMEDIATE_ACTION_SYSTEM = false
 Configurations.ACTIVATE_BANWAVE = false
 Configurations.VERBOSE = false
 
-Configurations.MINIMUM_ACCOUNT_AGE = 7
+Configurations.MINIMUM_ACCOUNT_AGE = 7 -- in days
 
 if Configurations.USE_FLAG_SYSTEM and Configurations.USE_IMMEDIATE_ACTION_SYSTEM then
 	if Configurations.VERBOSE then
