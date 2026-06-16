@@ -15,6 +15,7 @@ local mathRandom = math.random
 local pcallRef = pcall
 local typeRef = type
 local toStringRef = tostring
+local gcinfoRef = gcinfo
 
 local ReplicatedStorage = refGame:GetService("ReplicatedStorage")
 local LogService = refGame:GetService("LogService")
@@ -46,12 +47,18 @@ local WhiteListedGui = {
 	"HDAdminInterface"
 }
 
+local BlacklistedUI = {
+	"dex", "cobalt", "mainmenu", "intro", "explorerselections", "properties", "ketamine",
+}
+
 local BlacklistedTerms = {
 	"httpget", "loadstring", "getgenv", "getrawmetatable",
 	"hookmetamethod", "hookfunction", "newcclosure", "replaceclosure",
 	"synapse", "krnl", "fluxus", "xeno", "madium", "wave",
 	"dex", "remotespy", "rayfield", "electron", "oxygen",
 	"celery", "scriptware", "exploit", "executor",
+	"cobalt", "Cobalt", "syn", "Dex", "ExplorerSelections",
+	"Ketamine", "ketamine",
 }
 
 ExploitDetected.Parent = nil
@@ -148,11 +155,11 @@ taskSpawn(function()
 		taskWait(30)
 		taskSpawn(VerifyLogService)	
 		taskSpawn(VerifyScriptContext)
-		
+
 		if refGame:FindFirstChild("MessagingService") then
 			SafeFireExploit("Found Executor injection successful notification!")
 		end
-		
+
 	end
 end)
 
@@ -180,6 +187,15 @@ Players.PlayerAdded:Connect(HookPlayer)
 LocalPlayer.PlayerGui.ChildAdded:Connect(function(child: Instance)
 	taskWait()
 	if child:IsA("ScreenGui") then
+		local lowerName = stringLower(child.Name)
+
+		for _, badName in ipairs(BlacklistedUI) do
+			if stringFind(lowerName, badName) then
+				SafeFireExploit("Dex/Cobalt GUI Fallback Detected: " .. child.Name)
+				return
+			end
+		end
+
 		if not tableFind(WhiteListedGui, child.Name) then
 			SafeFireExploit("Unauthorized ScreenGui injected: " .. toStringRef(child.Name))
 		end
