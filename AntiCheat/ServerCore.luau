@@ -33,12 +33,12 @@ local SPEED_BUFFER = 10
 local SPEED_VIOLATION_THRESHOLD = 5
 local SPEED_SAMPLE_COUNT = 6
 
-local FLY_HOVER_GRACE      = 1.8
-local FLY_HOVER_THRESHOLD  = 0.4
-local FLY_SUSTAINED_UP     = 5
+local FLY_HOVER_GRACE = 1.8
+local FLY_HOVER_THRESHOLD = 0.4
+local FLY_SUSTAINED_UP = 5
 local FLY_VIOLATION_THRESHOLD = 6
-local JUMP_IMMUNITY_DURATION  = 1.4
-local JUMP_VELOCITY_TRIGGER   = 15
+local JUMP_IMMUNITY_DURATION = 1.4
+local JUMP_VELOCITY_TRIGGER = 15
 
 local CHECK_INTERVAL = 0.1
 
@@ -55,7 +55,7 @@ local BlacklistedPatterns = {
 	"http.*get", "raw.*equal", "set.*readonly", "make.*writeable",
 }
 
-local RecentlyFlagged    = {}
+local RecentlyFlagged = {}
 local PlayerMovementData = {}
 
 local function AppendErrorLog(player, logType, message, source)
@@ -64,7 +64,10 @@ local function AppendErrorLog(player, logType, message, source)
 	if not Data.ErrorLogs then Data.ErrorLogs = {} end
 	if #Data.ErrorLogs >= MAX_ERROR_LOGS then table.remove(Data.ErrorLogs, 1) end
 	table.insert(Data.ErrorLogs, {
-		Type = logType, Message = message, Source = source, Timestamp = os.time(),
+		Type = logType,
+		Message = message,
+		Source = source,
+		Timestamp = os.time(),
 	})
 end
 
@@ -75,14 +78,16 @@ local function IsSpamming(player)
 	end
 	local d = RemoteThrottles[player.UserId]
 	if now - d.lastReset >= 1 then
-		d.count = 1; d.lastReset = now; return false
+		d.count = 1
+		d.lastReset = now
+		return false
 	end
 	d.count += 1
 	return d.count > MAX_REMOTES_PER_SECOND
 end
 
 local function IsGrounded(character)
-	local hrp      = character:FindFirstChild("HumanoidRootPart")
+	local hrp = character:FindFirstChild("HumanoidRootPart")
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	if not hrp or not humanoid then return false end
 
@@ -90,7 +95,7 @@ local function IsGrounded(character)
 	params.FilterDescendantsInstances = { character }
 	params.FilterType = Enum.RaycastFilterType.Exclude
 
-	local origin    = hrp.Position - Vector3.new(0, hrp.Size.Y / 2, 0)
+	local origin = hrp.Position - Vector3.new(0, hrp.Size.Y / 2, 0)
 	local direction = Vector3.new(0, -(humanoid.HipHeight + 1.2), 0)
 	return game:GetService("Workspace"):Raycast(origin, direction, params) ~= nil
 end
@@ -102,7 +107,8 @@ end
 
 local function GetAverage(t)
 	if #t == 0 then return 0 end
-	local s = 0; for _, v in ipairs(t) do s += v end
+	local s = 0
+	for _, v in ipairs(t) do s += v end
 	return s / #t
 end
 
@@ -115,7 +121,7 @@ local function TeleportToSavedPosition(player)
 
 	local character = player.Character
 	if not character then return end
-	local hrp      = character:FindFirstChild("HumanoidRootPart")
+	local hrp = character:FindFirstChild("HumanoidRootPart")
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	if not hrp or not humanoid or humanoid.Health <= 0 then return end
 
@@ -123,22 +129,22 @@ local function TeleportToSavedPosition(player)
 		player.Name, data.lastGoodPosition.X, data.lastGoodPosition.Y, data.lastGoodPosition.Z))
 
 	hrp.Anchored = true
-	hrp.CFrame   = CFrame.new(data.lastGoodPosition + Vector3.new(0, 3, 0))
-	hrp.AssemblyLinearVelocity  = Vector3.zero
+	hrp.CFrame = CFrame.new(data.lastGoodPosition + Vector3.new(0, 3, 0))
+	hrp.AssemblyLinearVelocity = Vector3.zero
 	hrp.AssemblyAngularVelocity = Vector3.zero
 
 	task.defer(function()
 		if hrp and hrp.Parent then hrp.Anchored = false end
 	end)
 
-	data.immuneUntil      = tick() + POST_RUBBERBAND_IMMUNITY
+	data.immuneUntil = tick() + POST_RUBBERBAND_IMMUNITY
 	data.jumpImmunityUntil = 0
-	data.airTime           = 0
-	data.flyViolations     = 0
-	data.speedViolations   = 0
-	data.speedSamples      = {}
-	data.lastCheckPos      = nil
-	data.lastCheckTime     = nil
+	data.airTime = 0
+	data.flyViolations = 0
+	data.speedViolations = 0
+	data.speedSamples = {}
+	data.lastCheckPos = nil
+	data.lastCheckTime = nil
 end
 
 local function FlagOrKick(player, reason)
@@ -171,7 +177,7 @@ local function StartMovementChecks(player)
 		MovementConnections[player.UserId] = nil
 	end
 
-	local saveTimer  = 0
+	local saveTimer = 0
 	local checkTimer = 0
 	local connection
 
@@ -194,7 +200,7 @@ local function StartMovementChecks(player)
 		local character = player.Character
 		if not character then return end
 
-		local hrp      = character:FindFirstChild("HumanoidRootPart")
+		local hrp = character:FindFirstChild("HumanoidRootPart")
 		local humanoid = character:FindFirstChildOfClass("Humanoid")
 		if not hrp or not humanoid or humanoid.Health <= 0 then return end
 		if hrp.Anchored then return end
@@ -208,7 +214,7 @@ local function StartMovementChecks(player)
 			return
 		end
 
-		local vel      = hrp.AssemblyLinearVelocity
+		local vel = hrp.AssemblyLinearVelocity
 		local grounded = IsGrounded(character)
 		local jumpImmune = data.jumpImmunityUntil and now < data.jumpImmunityUntil
 
@@ -222,9 +228,9 @@ local function StartMovementChecks(player)
 			if not data.wasGrounded then
 				vPrint(string.format("[AC:Ground] %s landed (airTime=%.2fs)", player.Name, data.airTime or 0))
 			end
-			data.wasGrounded    = true
-			data.airTime        = 0
-			data.flyViolations  = math.max(0, (data.flyViolations or 0) - 2)
+			data.wasGrounded = true
+			data.airTime = 0
+			data.flyViolations = math.max(0, (data.flyViolations or 0) - 2)
 			data.speedViolations = math.max(0, (data.speedViolations or 0) - 1)
 			data.jumpImmunityUntil = 0
 		else
@@ -252,11 +258,11 @@ local function StartMovementChecks(player)
 		checkTimer = 0
 
 		if data.lastCheckPos and data.lastCheckTime then
-			local delta          = hrp.Position - data.lastCheckPos
+			local delta = hrp.Position - data.lastCheckPos
 			local horizontalSpeed = Vector3.new(delta.X, 0, delta.Z).Magnitude / elapsed
-			local verticalSpeed   = delta.Y / elapsed
-			local absVertical     = math.abs(verticalSpeed)
-			local allowedSpeed    = GetAllowedSpeed(humanoid)
+			local verticalSpeed = delta.Y / elapsed
+			local absVertical = math.abs(verticalSpeed)
+			local allowedSpeed = GetAllowedSpeed(humanoid)
 
 			vPrint(string.format("[AC:Check] %s | hSpeed=%.1f (max=%.1f) | vSpeed=%.1f | air=%.2fs | jumpImm=%s | grounded=%s",
 				player.Name,
@@ -280,7 +286,7 @@ local function StartMovementChecks(player)
 						data.speedViolations = (data.speedViolations or 0) + 1
 						if data.speedViolations >= SPEED_VIOLATION_THRESHOLD then
 							data.speedViolations = 0
-							data.speedSamples    = {}
+							data.speedSamples = {}
 							FlagOrKick(player, "Speed Hack Detected (avg " .. math.round(avg) .. " studs/s)")
 						end
 					end
@@ -291,7 +297,7 @@ local function StartMovementChecks(player)
 
 			if not grounded and not jumpImmune then
 				local isSustainedUp = verticalSpeed > FLY_SUSTAINED_UP and (data.airTime or 0) > 0.3
-				local isHovering    = (data.airTime or 0) > FLY_HOVER_GRACE and absVertical < FLY_HOVER_THRESHOLD
+				local isHovering = (data.airTime or 0) > FLY_HOVER_GRACE and absVertical < FLY_HOVER_THRESHOLD
 
 				if isSustainedUp or isHovering then
 					data.flyViolations = (data.flyViolations or 0) + 1
@@ -311,7 +317,7 @@ local function StartMovementChecks(player)
 			end
 		end
 
-		data.lastCheckPos  = hrp.Position
+		data.lastCheckPos = hrp.Position
 		data.lastCheckTime = now
 
 		saveTimer += elapsed
@@ -403,17 +409,17 @@ end
 
 local function ResetMovementData(player)
 	PlayerMovementData[player.UserId] = {
-		lastGoodPosition    = nil,
-		immuneUntil         = tick() + 3,
-		jumpImmunityUntil   = 0,
-		lastCheckPos        = nil,
-		lastCheckTime       = nil,
-		airTime             = 0,
-		flyViolations       = 0,
-		speedViolations     = 0,
-		speedSamples        = {},
-		wasGrounded         = false,
-		lastRubberbandTime  = nil,
+		lastGoodPosition = nil,
+		immuneUntil = tick() + 3,
+		jumpImmunityUntil = 0,
+		lastCheckPos = nil,
+		lastCheckTime = nil,
+		airTime = 0,
+		flyViolations = 0,
+		speedViolations = 0,
+		speedSamples = {},
+		wasGrounded = false,
+		lastRubberbandTime = nil,
 	}
 end
 
@@ -427,7 +433,7 @@ Players.PlayerAdded:Connect(function(player)
 		local watchdog = script:FindFirstChild("LocalScript")
 		if watchdog then
 			local clone = watchdog:Clone()
-			clone.Name   = "ClientWatchdog"
+			clone.Name = "ClientWatchdog"
 			clone.Parent = gui
 		end
 	end
@@ -453,8 +459,8 @@ Players.PlayerRemoving:Connect(function(player)
 	end
 	PlayerMovementData[player.UserId] = nil
 	ExpectedHandshakes[player.UserId] = nil
-	RecentlyFlagged[player.UserId]    = nil
-	RemoteThrottles[player.UserId]    = nil
+	RecentlyFlagged[player.UserId] = nil
+	RemoteThrottles[player.UserId] = nil
 end)
 
 Remotes.ExploitDetected.OnServerEvent:Connect(function(player, reason)
