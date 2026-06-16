@@ -3,6 +3,7 @@ selfRef.Name = tostring(math.random(100000, 999999))
 script = nil
 selfRef:Destroy()
 
+local refGame = game
 local taskWait = task.wait
 local taskDelay = task.delay
 local taskSpawn = task.spawn
@@ -15,11 +16,11 @@ local pcallRef = pcall
 local typeRef = type
 local toStringRef = tostring
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local LogService = game:GetService("LogService")
-local ScriptContext = game:GetService("ScriptContext")
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
+local ReplicatedStorage = refGame:GetService("ReplicatedStorage")
+local LogService = refGame:GetService("LogService")
+local ScriptContext = refGame:GetService("ScriptContext")
+local Players = refGame:GetService("Players")
+local RunService = refGame:GetService("RunService")
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local ExploitDetected = Remotes:WaitForChild("ExploitDetected")
@@ -137,10 +138,21 @@ taskSpawn(VerifyLogService)
 taskSpawn(VerifyScriptContext)
 
 taskSpawn(function()
+	if refGame:FindFirstChild("MessagingService") then
+		SafeFireExploit("Found Executor injection successful notification!")
+	end
+end)
+
+taskSpawn(function()
 	while true do
 		taskWait(30)
-		taskSpawn(VerifyLogService)
+		taskSpawn(VerifyLogService)	
 		taskSpawn(VerifyScriptContext)
+		
+		if refGame:FindFirstChild("MessagingService") then
+			SafeFireExploit("Found Executor injection successful notification!")
+		end
+		
 	end
 end)
 
@@ -174,9 +186,9 @@ LocalPlayer.PlayerGui.ChildAdded:Connect(function(child: Instance)
 	end
 end)
 
-game:GetService("Workspace").CurrentCamera:GetPropertyChangedSignal("FieldOfView"):Connect(function()
-	if game:GetService("Workspace").CurrentCamera.FieldOfView > MAX_FIELD_OF_VIEW then
-		SafeFireExploit("Camera FieldOfView tampered: " .. toStringRef(game:GetService("Workspace").CurrentCamera.FieldOfView))
+refGame:GetService("Workspace").CurrentCamera:GetPropertyChangedSignal("FieldOfView"):Connect(function()
+	if refGame:GetService("Workspace").CurrentCamera.FieldOfView > MAX_FIELD_OF_VIEW then
+		SafeFireExploit("Camera FieldOfView tampered: " .. toStringRef(refGame:GetService("Workspace").CurrentCamera.FieldOfView))
 	end
 end)
 
