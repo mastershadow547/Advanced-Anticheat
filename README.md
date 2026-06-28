@@ -1,41 +1,25 @@
 # Advanced-Anticheat
-A anti-cheat system for Roblox made to detect movement exploits, unauthorized remote execution, and environment tampering.
+A robust anti-cheat system for Roblox designed to detect movement exploits, unauthorized remote execution, and environment tampering.
 
-# How to Setup?
-1. Dependency Setup
+# 🛠️ How to Setup
+Follow these steps to integrate the system into your project.
+
+1. Dependencies
 Inside ServerScriptService, create a folder named Libraries.
 
 Place the ProfileStore ModuleScript inside this folder.
 
-Note: If you already use ProfileStore elsewhere, ensure you update the ProfileStore variable in your AntiCheatData script to point to your existing location.
+Note: If you already use ProfileStore elsewhere, simply update the ProfileStore variable in your AntiCheatData script to point to your existing location.
 
-2. Main Folder Structure
+2. Core Structure
 Create a folder inside ServerScriptService named AntiCheatLoader.
 
-3. Organizing Components
-Inside the AntiCheatLoader folder, set up the following items:
+Inside AntiCheatLoader, create a folder named Scripts.
 
-Folder: Scripts
+3. File Hierarchy
+Organize your scripts exactly as shown below:
 
-Place these scripts inside the Scripts folder:
-
-Configurations.luau (ModuleScript)
-
-AntiCheatData.luau (ModuleScript)
-
-AntiCheatTemplate.luau (ModuleScript)
-
-ServerCore.luau (ModuleScript)
-
-LocalScript: ClientCore (Parented directly under ServerCore)
-
-AntiCheatData.luau (ModuleScript)
-
-ModuleScript: AntiCheatTemplate (Parented directly under AntiCheatData)
-
-Script: Loader.luau (This must be a normal Server Script at the root of the AntiCheatLoader folder).
-
-in the end the structure should look like this:
+# Plaintext
 ServerScriptService
  ├── Libraries
  │    └── ProfileStore (ModuleScript)
@@ -47,5 +31,15 @@ ServerScriptService
            │    └── AntiCheatTemplate (ModuleScript)
            └── ServerCore (ModuleScript)
                 └── ClientCore (LocalScript)
+Important Configuration Notes
+Script Types:
 
-<img width="336" height="540" alt="image" src="https://github.com/user-attachments/assets/4ccbff1b-cafc-4ae3-9720-15a3d03f0edc" />
+Loader must be a standard Server Script.
+
+ClientCore must be a LocalScript.
+
+All other files mentioned should be ModuleScripts.
+
+Parenting: Ensure ClientCore is parented directly under ServerCore, and AntiCheatTemplate is parented directly under AntiCheatData as indicated in the hierarchy above.
+
+<img width="331" height="537" alt="image" src="https://github.com/user-attachments/assets/e6d0606e-041c-4db0-8762-02f286118118" />
