@@ -15,7 +15,6 @@ local mathRandom = math.random
 local pcallRef = pcall
 local typeRef = type
 local toStringRef = tostring
-local gcinfoRef = gcinfo
 
 local ReplicatedStorage = refGame:GetService("ReplicatedStorage")
 local LogService = refGame:GetService("LogService")
