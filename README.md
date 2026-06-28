@@ -20,6 +20,7 @@ Follow these steps to integrate the system into your project.
 Organize your scripts exactly as shown below:
 
 # Plaintext
+```text
 ServerScriptService
  ├── Libraries
  │    └── ProfileStore (ModuleScript)
@@ -31,6 +32,7 @@ ServerScriptService
            │    └── AntiCheatTemplate (ModuleScript)
            └── ServerCore (ModuleScript)
                 └── ClientCore (LocalScript)
+```
 # Important Configuration Notes
 - Script Types:
 
