@@ -39,6 +39,7 @@ local FLY_SUSTAINED_UP = 5
 local FLY_VIOLATION_THRESHOLD = 6
 local JUMP_IMMUNITY_DURATION = 1.4
 local JUMP_VELOCITY_TRIGGER = 15
+local MAX_WALKSPEED = 16
 
 local CHECK_INTERVAL = 0.1
 
@@ -101,21 +102,22 @@ local function IsGrounded(character)
 end
 
 local function GetAllowedSpeed(humanoid)
-	if not humanoid then return 26 end
-	return humanoid.WalkSpeed + SPEED_BUFFER
+	return MAX_WALKSPEED + SPEED_BUFFER
 end
 
 local function GetAverage(t)
 	if #t == 0 then return 0 end
 	local s = 0
-	for _, v in ipairs(t) do s += v end
+	for _, v in ipairs(t) do
+		s += v
+	end
 	return s / #t
 end
 
 local function TeleportToSavedPosition(player)
 	local data = PlayerMovementData[player.UserId]
 	if not data or not data.lastGoodPosition then
-		vWarn("[AC:Rubberband] No lastGoodPosition for", player.Name, "— cannot rubberband")
+		vWarn("[AC:Rubberband] No lastGoodPosition for", player.Name, "- cannot rubberband")
 		return
 	end
 
@@ -134,7 +136,9 @@ local function TeleportToSavedPosition(player)
 	hrp.AssemblyAngularVelocity = Vector3.zero
 
 	task.defer(function()
-		if hrp and hrp.Parent then hrp.Anchored = false end
+		if hrp and hrp.Parent then
+			hrp.Anchored = false
+		end
 	end)
 
 	data.immuneUntil = tick() + POST_RUBBERBAND_IMMUNITY
@@ -160,11 +164,13 @@ local function FlagOrKick(player, reason)
 	local acData = AntiCheatData.GetData(player)
 	if not acData then return end
 
-	vWarn("[AC:Violation]", player.Name, "—", reason)
+	vWarn("[AC:Violation]", player.Name, "-", reason)
 	AppendErrorLog(player, "MovementViolation", reason, "ServerMovementCheck")
 	TeleportToSavedPosition(player)
 
-	if Config.USE_FLAG_SYSTEM then acData.Flagged = true end
+	if Config.USE_FLAG_SYSTEM then
+		acData.Flagged = true
+	end
 	if Config.USE_IMMEDIATE_ACTION_SYSTEM then
 		acData.Banned = true
 		player:Kick(reason)
@@ -228,10 +234,16 @@ local function StartMovementChecks(player)
 			if not data.wasGrounded then
 				vPrint(string.format("[AC:Ground] %s landed (airTime=%.2fs)", player.Name, data.airTime or 0))
 			end
+
 			data.wasGrounded = true
 			data.airTime = 0
+
 			data.flyViolations = math.max(0, (data.flyViolations or 0) - 2)
-			data.speedViolations = math.max(0, (data.speedViolations or 0) - 1)
+
+			if #data.speedSamples == 0 then
+				data.speedViolations = math.max(0, (data.speedViolations or 0) - 1)
+			end
+
 			data.jumpImmunityUntil = 0
 		else
 			data.wasGrounded = false
@@ -239,97 +251,130 @@ local function StartMovementChecks(player)
 		end
 
 		checkTimer += dt
-		if checkTimer < CHECK_INTERVAL then
-			saveTimer += dt
-			if saveTimer >= SAVE_INTERVAL and grounded then
-				saveTimer = 0
-				data.lastGoodPosition = hrp.Position
-				vPrint(string.format("[AC:Save] %s good pos saved (%.1f, %.1f, %.1f)",
-					player.Name, hrp.Position.X, hrp.Position.Y, hrp.Position.Z))
-			end
-			if data.lastGoodPosition == nil and grounded then
-				data.lastGoodPosition = hrp.Position
-				vPrint("[AC:Save] Initial good pos seeded for", player.Name)
-			end
-			return
-		end
+		saveTimer += dt
 
-		local elapsed = checkTimer
-		checkTimer = 0
+		if checkTimer >= CHECK_INTERVAL then
+			local elapsed = checkTimer
+			checkTimer = 0
 
-		if data.lastCheckPos and data.lastCheckTime then
-			local delta = hrp.Position - data.lastCheckPos
-			local horizontalSpeed = Vector3.new(delta.X, 0, delta.Z).Magnitude / elapsed
-			local verticalSpeed = delta.Y / elapsed
-			local absVertical = math.abs(verticalSpeed)
-			local allowedSpeed = GetAllowedSpeed(humanoid)
+			if data.lastCheckPos and data.lastCheckTime then
+				local delta = hrp.Position - data.lastCheckPos
+				local horizontalSpeed = Vector3.new(delta.X, 0, delta.Z).Magnitude / elapsed
+				local verticalSpeed = delta.Y / elapsed
+				local absVertical = math.abs(verticalSpeed)
+				local allowedSpeed = GetAllowedSpeed(humanoid)
+				
+				if horizontalSpeed > allowedSpeed * 4 then
+					vWarn(string.format(
+						"[AC:Speed] %s extreme speed %.1f > %.1f",
+						player.Name,
+						horizontalSpeed,
+						allowedSpeed * 4
+						))
 
-			vPrint(string.format("[AC:Check] %s | hSpeed=%.1f (max=%.1f) | vSpeed=%.1f | air=%.2fs | jumpImm=%s | grounded=%s",
-				player.Name,
-				horizontalSpeed, allowedSpeed,
-				verticalSpeed,
-				data.airTime or 0,
-				tostring(jumpImmune),
-				tostring(grounded)))
+					FlagOrKick(player,
+						"Extreme Speed Detected (" ..
+							math.round(horizontalSpeed) ..
+							" studs/s)"
+					)
 
-			if horizontalSpeed > allowedSpeed then
-				table.insert(data.speedSamples, horizontalSpeed)
-				if #data.speedSamples > SPEED_SAMPLE_COUNT then
-					table.remove(data.speedSamples, 1)
+					data.lastCheckPos = hrp.Position
+					data.lastCheckTime = now
+
+					return
 				end
 
-				if #data.speedSamples >= SPEED_SAMPLE_COUNT then
-					local avg = GetAverage(data.speedSamples)
-					vWarn(string.format("[AC:Speed] %s avg=%.1f (violations=%d/%d)",
-						player.Name, avg, data.speedViolations or 0, SPEED_VIOLATION_THRESHOLD))
-					if avg > allowedSpeed then
-						data.speedViolations = (data.speedViolations or 0) + 1
-						if data.speedViolations >= SPEED_VIOLATION_THRESHOLD then
-							data.speedViolations = 0
-							data.speedSamples = {}
-							FlagOrKick(player, "Speed Hack Detected (avg " .. math.round(avg) .. " studs/s)")
+				vPrint(string.format("[AC:Check] %s | hSpeed=%.1f (max=%.1f) | vSpeed=%.1f | air=%.2fs | jumpImm=%s | grounded=%s",
+					player.Name,
+					horizontalSpeed, allowedSpeed,
+					verticalSpeed,
+					data.airTime or 0,
+					tostring(jumpImmune),
+					tostring(grounded)))
+
+				if horizontalSpeed > allowedSpeed then
+					table.insert(data.speedSamples, horizontalSpeed)
+					if #data.speedSamples > SPEED_SAMPLE_COUNT then
+						table.remove(data.speedSamples, 1)
+					end
+
+					if #data.speedSamples >= SPEED_SAMPLE_COUNT then
+						local avg = GetAverage(data.speedSamples)
+						vWarn(string.format("[AC:Speed] %s avg=%.1f (violations=%d/%d)",
+							player.Name, avg, data.speedViolations or 0, SPEED_VIOLATION_THRESHOLD))
+						if avg > allowedSpeed then
+							data.speedViolations = (data.speedViolations or 0) + 1
+
+							vWarn(string.format(
+								"[AC:Speed] %s violation %d/%d (avg %.1f)",
+								player.Name,
+								data.speedViolations,
+								SPEED_VIOLATION_THRESHOLD,
+								avg
+								))
+
+							if data.speedViolations >= SPEED_VIOLATION_THRESHOLD then
+								data.speedViolations = 0
+								data.speedSamples = {}
+								FlagOrKick(player, "Speed Hack Detected (avg " .. math.round(avg) .. " studs/s)")
+							end
 						end
 					end
-				end
-			else
-				if #data.speedSamples > 0 then table.remove(data.speedSamples, 1) end
-			end
-
-			if not grounded and not jumpImmune then
-				local isSustainedUp = verticalSpeed > FLY_SUSTAINED_UP and (data.airTime or 0) > 0.3
-				local isHovering = (data.airTime or 0) > FLY_HOVER_GRACE and absVertical < FLY_HOVER_THRESHOLD
-
-				if isSustainedUp or isHovering then
-					data.flyViolations = (data.flyViolations or 0) + 1
-					vWarn(string.format("[AC:Fly] %s violation %d/%d | sustained=%s hover=%s",
-						player.Name, data.flyViolations, FLY_VIOLATION_THRESHOLD,
-						tostring(isSustainedUp), tostring(isHovering)))
 				else
+					data.speedSamples = {}
+
+					if data.speedViolations > 0 then
+						data.speedViolations = math.max(0, data.speedViolations - 1)
+					end
+				end
+
+				if not grounded and not jumpImmune then
+					local isSustainedUp = verticalSpeed > FLY_SUSTAINED_UP and (data.airTime or 0) > 0.3
+					local isHovering = (data.airTime or 0) > FLY_HOVER_GRACE and absVertical < FLY_HOVER_THRESHOLD
+
+					if isSustainedUp or isHovering then
+						data.flyViolations = (data.flyViolations or 0) + 1
+						vWarn(string.format("[AC:Fly] %s violation %d/%d | sustained=%s hover=%s",
+							player.Name, data.flyViolations, FLY_VIOLATION_THRESHOLD,
+							tostring(isSustainedUp), tostring(isHovering)))
+					else
+						data.flyViolations = math.max(0, (data.flyViolations or 0) - 1)
+					end
+
+					if (data.flyViolations or 0) >= FLY_VIOLATION_THRESHOLD then
+						data.flyViolations = 0
+						FlagOrKick(player, "Fly Hack Detected")
+					end
+				elseif not grounded and jumpImmune then
 					data.flyViolations = math.max(0, (data.flyViolations or 0) - 1)
 				end
+			end
 
-				if (data.flyViolations or 0) >= FLY_VIOLATION_THRESHOLD then
-					data.flyViolations = 0
-					FlagOrKick(player, "Fly Hack Detected")
+			data.lastCheckPos = hrp.Position
+			data.lastCheckTime = now
+		end
+
+		if saveTimer >= SAVE_INTERVAL then
+			saveTimer = 0
+
+			if grounded then
+				local currentSpeed = hrp.AssemblyLinearVelocity.Magnitude
+
+				if currentSpeed < (GetAllowedSpeed(humanoid) + 15) then
+					data.lastGoodPosition = hrp.Position
+					vPrint(string.format("[AC:Save] %s good pos saved (%.1f, %.1f, %.1f)",
+						player.Name, hrp.Position.X, hrp.Position.Y, hrp.Position.Z))
+				else
+					vWarn("[AC:Save] Rejected save due to high speed:", currentSpeed)
 				end
-			elseif not grounded and jumpImmune then
-				data.flyViolations = math.max(0, (data.flyViolations or 0) - 1)
+			else
+				saveTimer = 0
 			end
 		end
 
-		data.lastCheckPos = hrp.Position
-		data.lastCheckTime = now
-
-		saveTimer += elapsed
-		if saveTimer >= SAVE_INTERVAL and grounded then
-			saveTimer = 0
-			data.lastGoodPosition = hrp.Position
-			vPrint(string.format("[AC:Save] %s good pos saved (%.1f, %.1f, %.1f)",
-				player.Name, hrp.Position.X, hrp.Position.Y, hrp.Position.Z))
-		end
 		if data.lastGoodPosition == nil and grounded then
 			data.lastGoodPosition = hrp.Position
-			vPrint("[AC:Save] Initial good pos seeded for", player.Name)
+			vPrint("[AC:Save] Initial goo pos seeded for", player.Name)
 		end
 	end)
 
@@ -351,7 +396,9 @@ local function ObfuscateServices()
 			ServiceMap[svc] = { originalName = svc.Name, obfuscatedName = newName }
 			svc.Name = newName
 		end)
-		if not ok then vWarn("[AntiCheat] Could not rename service:", err) end
+		if not ok then
+			vWarn("[AntiCheat] Could not rename service:", err)
+		end
 	end
 end
 
@@ -365,7 +412,9 @@ local function CheckMessageForExploits(player, message, source)
 		if string.find(lower, term, 1, true) then
 			if flags[term] then return false end
 			flags[term] = true
-			task.delay(5, function() if flags then flags[term] = nil end end)
+			task.delay(5, function()
+				if flags then flags[term] = nil end
+			end)
 			AppendErrorLog(player, "BlacklistedTerm", message, source)
 			if Config.USE_FLAG_SYSTEM then AntiCheatData.GetData(player).Flagged = true end
 			if Config.USE_IMMEDIATE_ACTION_SYSTEM then
@@ -380,7 +429,9 @@ local function CheckMessageForExploits(player, message, source)
 			local key = "pattern_" .. pattern
 			if flags[key] then return false end
 			flags[key] = true
-			task.delay(5, function() if flags then flags[key] = nil end end)
+			task.delay(5, function()
+				if flags then flags[key] = nil end
+			end)
 			AppendErrorLog(player, "SuspiciousPattern", message, source)
 			if Config.USE_FLAG_SYSTEM then AntiCheatData.GetData(player).Flagged = true end
 			if Config.USE_IMMEDIATE_ACTION_SYSTEM then
@@ -398,7 +449,9 @@ local function HandleGhostScript(player)
 	local flags = RecentlyFlagged[player.UserId]
 	if flags["GhostScript"] then return end
 	flags["GhostScript"] = true
-	task.delay(5, function() if flags then flags["GhostScript"] = nil end end)
+	task.delay(5, function()
+		if flags then flags["GhostScript"] = nil end
+	end)
 
 	AppendErrorLog(player, "GhostScript", "[GhostScript]", "NilScript")
 	if Config.USE_FLAG_SYSTEM then AntiCheatData.GetData(player).Flagged = true end
@@ -521,12 +574,14 @@ task.spawn(function()
 	end
 end)
 
-task.spawn(function()
-	ObfuscateServices()
-	while true do
-		task.wait(120)
+if Config.ENABLE_SERVICE_OBFUSCATION then
+	task.spawn(function()
 		ObfuscateServices()
-	end
-end)
+		while true do
+			task.wait(360)
+			ObfuscateServices()
+		end
+	end)
+end
 
 return AntiCheat
