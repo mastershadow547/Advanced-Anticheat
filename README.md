@@ -43,3 +43,30 @@ ServerScriptService
 - Parenting: Ensure ClientCore is parented directly under ServerCore, and AntiCheatTemplate is parented directly under AntiCheatData as indicated in the hierarchy above.
 
 <img width="331" height="537" alt="image" src="https://github.com/user-attachments/assets/e6d0606e-041c-4db0-8762-02f286118118" />
+
+# Now What Does It Detect and Do?
+- Speed hacks
+- Fly Hacks
+- Unauthorized gui's (in PlayerGui as CoreGui requires higher level permissions)
+- Unauthorized instances
+- Highlight detection
+- Honeypot (GiveItem)
+- _G variable tampering
+- Errors/Log detection
+- Field Of View tampering detection
+- Esp Detection (basic)
+- Changes the names of common services so some scripts get errors and don't work.
+- Method tampering detection
+- Handshake
+- Logs up to 100 errors or flags to a player.
+- Makes it harder to find the client core.
+- Flag system where it flags the player and when banwave is active it bans them.
+- Enforces a minimum account age preventing some alt accounts.
+- Verbose mode that shows everything in console.
+- Immediate action system where it dosen't flag and waits for banwave it instantly bans.
+- Remote rate limiting to prevent spam.
+- Checks args sent by client.
+- Saves everything to DataStore using ProfileStore
+
+  Thats pretty much all I'm going to make this use Roblox's ban api later but also still save the logs.
+  Im currently reading and trying to understand some scripts like Dark Dex and Ketamine Remote Spy, so I can find a way to detect them.
