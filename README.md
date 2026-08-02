@@ -70,3 +70,4 @@ ServerScriptService
 
   Thats pretty much all I'm going to make this use Roblox's ban api later but also still save the logs.
   Im currently reading and trying to understand some scripts like Dark Dex and Ketamine Remote Spy, so I can find a way to detect them.
+  Im doing so much more im current gathering so much info and also reading the api to find methods.
