@@ -1,5 +1,7 @@
 -- Showcase https://drive.google.com/file/d/15AiSCMoJgrgyQgWNhKH2uqJQCnLPmnCe/view?usp=sharing
 
+--old script
+
 local selfRef = script
 selfRef.Name = tostring(math.random(100000, 999999))
 script = nil
