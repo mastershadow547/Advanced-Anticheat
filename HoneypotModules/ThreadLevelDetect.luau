@@ -1,5 +1,7 @@
 local module = {}
 -- as soon as a exploiter requires this module script it will detect their thread level if it is higher then 2 it will detect it.
+-- Also not by me found on dev forumns and https://github.com/Pseudoreality/Roblox-Identities github.
+
 -- ============================================================
 -- CHECK 1: Thread identity probing
 --   2 = GameScript (normal)
