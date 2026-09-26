@@ -1,5 +1,3 @@
--- Showcase https://drive.google.com/file/d/15AiSCMoJgrgyQgWNhKH2uqJQCnLPmnCe/view?usp=sharing
-
 local RunService = game:GetService("RunService")
 
 local Configurations = {}
@@ -8,6 +6,7 @@ Configurations.USE_FLAG_SYSTEM = true
 Configurations.USE_IMMEDIATE_ACTION_SYSTEM = false
 Configurations.ACTIVATE_BANWAVE = false
 Configurations.ENABLE_SERVICE_OBFUSCATION = true
+Configurations.ENABLE_CLIENT_VERSION_CHECK = false
 Configurations.VERBOSE = true
 Configurations.MINIMUM_ACCOUNT_AGE = 7
 
@@ -36,10 +35,10 @@ local function ValidateConfig()
 		error("AntiCheat Configuration Error: No system selected! Enable either Flag or Immediate Action.")
 	end
 
-	if Configurations.VERBOSE and not RunService:IsStudio() then
-		warn("AntiCheat Warning: Verbose mode enabled in production environment. Turning off!")
-		Configurations.VERBOSE = false
-	end
+	--if Configurations.VERBOSE and not RunService:IsStudio() then
+	--	warn("AntiCheat Warning: Verbose mode enabled in production environment. Turning off!")
+	--	Configurations.VERBOSE = false
+	--end
 end
 
 ValidateConfig()
