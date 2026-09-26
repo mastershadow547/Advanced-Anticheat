@@ -1,15 +1,15 @@
--- Showcase https://drive.google.com/file/d/15AiSCMoJgrgyQgWNhKH2uqJQCnLPmnCe/view?usp=sharing
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("RunService")
 local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local AntiCheatDataTemplate = require(script.AntiCheatTemplate)
 local Config = require(script.Parent.Configurations)
 local ProfileStore = require(ServerScriptService.Libraries.ProfileStore)
+local Remotes = ReplicatedStorage.Remotes
 
-local DATA_STORE_KEY = RunService:IsStudio() and "TEST_ANTICHEAT7" or "OFFICIAL_ANTICHEAT"
+const DATA_STORE_KEY = RunService:IsStudio() and "TEST_ANTICHEAT10013" or "OFFICIAL_ANTICHEAT2"
 local AntiCheatStore = ProfileStore.New(DATA_STORE_KEY, AntiCheatDataTemplate.DEFAULT_ANTI_CHEAT_DATA)
 local Profiles: {[Player]: typeof(AntiCheatStore:StartSessionAsync())} = {}
 
@@ -66,13 +66,18 @@ function Local.LoadProfile(Player: Player)
 		HasBeenKicked = true
 	end
 	
-	if Config.USE_FLAG_SYSTEM == true then
-		if Config.ACTIVATE_BANWAVE == true then
-			if HasBeenKicked == false then
-				Profile.Data.Banned = true
-				Player:Kick("You have been banned from this game.")
-			end
-		end
+	--if Config.USE_FLAG_SYSTEM == true then
+	--	if Config.ACTIVATE_BANWAVE == true then
+	--		if HasBeenKicked == false then
+	--			Profile.Data.Banned = true
+	--			Player:Kick("You have been banned from this game.")
+	--		end
+	--	end
+	--end
+	
+	if Config.USE_FLAG_SYSTEM and Config.ACTIVATE_BANWAVE and not HasBeenKicked then
+		Profile.Data.Banned = true
+		Player:Kick("You have been banned from this game.")
 	end
 	
 end
