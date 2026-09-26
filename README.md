@@ -1,3 +1,5 @@
+Made With AI Assistance. I Still did a lot of the research from dev forumns and implemented a bunch myself. 
+
 # Advanced-Anticheat
 A robust anti-cheat system for Roblox designed to detect movement exploits, unauthorized remote execution, and environment tampering.
 
